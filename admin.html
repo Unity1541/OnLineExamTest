@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理後台 - 線上考試系統</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div id="admin-container">
+            <!-- 登入表單和管理界面將由 JavaScript 動態生成 -->
+        </div>
+    </div>
+
+    <script>
+    // ========= 管理後台邏輯 =========
+    document.addEventListener('DOMContentLoaded', () => {
+        // 假資料（可以換成你自己的 Firebase 或 API）
+        const mockQuestions = [
+            { id: '1', subject: '數學', year: '2025', content: '若 2x + 3y = 12 且 x - y = 1，求 x 與 y 的值。', options: ['x=3, y=2', 'x=4, y=0', 'x=3, y=0', 'x=5, y=-1'], answer: 0 },
+            { id: '2', subject: '英文', year: '2025', content: 'Choose the correct sentence:', options: ['She don\'t like apples.', 'She doesn\'t likes apples.', 'She doesn\'t like apples.', 'She not like apples.'], answer: 2 }
+        ];
+        const availableYears = ['2025', '2024', '2023', '2022', '2021'];
+        const availableSubjects = ['數學', '英文', '國文', '物理', '化學', '生物'];
+
+        // 狀態
+        let isLoggedIn = false;
+        let username = '';
+        let password = '';
+        let questions = [];
+        let filteredQuestions = [];
+        let loading = false;
+        let searchTerm = '';
+        let yearFilter = '';
+        let subjectFilter = '';
+
+        const adminContainer = document.getElementById('admin-container');
+        render();
+
+        function render() {
+            if (!isLoggedIn) {
+                renderLoginForm();
+            } else {
+                renderAdminPanel();
+            }
+        }
+        function renderLoginForm() {
+            adminContainer.innerHTML = `
+                <div class="login-container">
+                    <div class="login-header">
+                        <svg class="login-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="20" height="16" x="2" y="4" rx="2" stroke="currentColor" fill="none" stroke-width="2"/>
+                            <path d="M10 14h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M6 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M6 12h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M6 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        <h2>管理者登入</h2>
+                        <p>請輸入您的帳號和密碼</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="username">帳號</label>
+                        <input type="text" id="username" placeholder="請輸入帳號">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">密碼</label>
+                        <input type="password" id="password" placeholder="請輸入密碼">
+                    </div>
+                    <button id="login-btn" class="btn btn-primary">登入</button>
+                    <div class="demo-info">
+                        <p>Demo 帳號: admin</p>
+                        <p>Demo 密碼: admin123</p>
+                    </div>
+                    <div class="mt-8 text-center">
+                        <a href="index.html" class="link">返回首頁</a>
+                    </div>
+                </div>
+            `;
+            document.getElementById('login-btn').addEventListener('click', handleLogin);
+            document.getElementById('username').addEventListener('keypress', function(e) { if (e.key === 'Enter') handleLogin(); });
+            document.getElementById('password').addEventListener('keypress', function(e) { if (e.key === 'Enter') handleLogin(); });
+        }
+        function handleLogin() {
+            username = document.getElementById('username').value;
+            password = document.getElementById('password').value;
+            if (username === 'admin' && password === 'admin123') {
+                isLoggedIn = true;
+                safeAddAdminClass(); // <--- 保證登入時有 admin class
+                loadQuestions();
+            } else {
+                alert('帳號或密碼錯誤');
+            }
+        }
+        function handleLogout() {
+            isLoggedIn = false;
+            username = '';
+            password = '';
+            safeRemoveAdminClass(); // <--- 登出時移除
+            render();
+        }
+        function loadQuestions() {
+            loading = true;
+            renderAdminPanel();
+            setTimeout(() => {
+                questions = [...mockQuestions];
+                filteredQuestions = [...mockQuestions];
+                loading = false;
+                renderAdminPanel();
+            }, 600);
+        }
+        function renderAdminPanel() {
+            adminContainer.innerHTML = `
+                <div style="text-align:center; padding:2rem 0;">
+                    <h2>考試系統管理後台</h2>
+                    <button id="logout-btn" class="btn btn-secondary" style="margin:1rem 0;">登出</button>
+                    <div>（這裡可放題目管理等內容）</div>
+                </div>
+            `;
+            document.getElementById('logout-btn').addEventListener('click', handleLogout);
+        }
+        // ========== 以下補強：自動管理 admin class ==========
+        function safeAddAdminClass() {
+            if (!document.body.classList.contains('admin')) {
+                document.body.classList.add('admin');
+            }
+        }
+        function safeRemoveAdminClass() {
+            document.body.classList.remove('admin');
+        }
+        // 頁面一載入就移除 admin class，防止重整殘留
+        document.body.classList.remove('admin');
+    });
+    </script>
+</body>
+</html>

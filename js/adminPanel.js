@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const adminContainer = document.getElementById('admin-container');
+    const QUESTIONS_STORAGE_KEY = 'examQuestions';
+    const LEADERBOARD_STORAGE_KEY = 'examLeaderboard';
 
     const mockQuestions = [
         { id: 'q1', subject: '數學', year: '2025', content: '若 2x + 3y = 12 且 x - y = 1，求 x 與 y 的值。', options: ['x=3, y=2', 'x=4, y=0', 'x=3, y=0', 'x=5, y=-1'], answer: 0 },
@@ -24,6 +26,33 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         expandedQuestionId: null,
     };
+    
+    function loadQuestionsFromStorage() {
+        try {
+            const storedQuestions = localStorage.getItem(QUESTIONS_STORAGE_KEY);
+            if (storedQuestions) {
+                const parsed = JSON.parse(storedQuestions);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    return parsed;
+                }
+            }
+            // First time run or empty storage: use mock data and save it.
+            localStorage.setItem(QUESTIONS_STORAGE_KEY, JSON.stringify(mockQuestions));
+            return mockQuestions;
+        } catch (e) {
+            console.error("Error loading questions from localStorage", e);
+            return mockQuestions; // Fallback
+        }
+    }
+
+    function saveQuestionsToStorage(questions) {
+        try {
+            localStorage.setItem(QUESTIONS_STORAGE_KEY, JSON.stringify(questions));
+        } catch (e) {
+            console.error("Error saving questions to localStorage", e);
+        }
+    }
+
 
     function setState(newState) {
         Object.assign(state, newState);
@@ -74,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function renderAdminPanel() {
-        const { loading, showForm, editingQuestionId, filters, expandedQuestionId } = state;
+        const { loading, showForm, editingQuestionId, filters } = state;
         const editingQuestion = editingQuestionId ? state.questions.find(q => q.id === editingQuestionId) : null;
 
         adminContainer.innerHTML = `
@@ -148,6 +177,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 <main id="question-list-container">
                     ${loading ? '<div class="loading-spinner">載入中...</div>' : renderQuestionList()}
                 </main>
+                
+                <section class="glass-card" style="margin-top: 2rem;">
+                    <h3>排名管理</h3>
+                    <p class="step-description" style="margin-bottom: 1rem;">此操作將會清除所有科目的排行榜資料，此操作無法復原。</p>
+                    <button id="clear-leaderboard-btn" class="btn btn-secondary" style="background-color: var(--danger-color);">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        清除所有排名
+                    </button>
+                </section>
             </div>
         `;
         attachAdminListeners();
@@ -211,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.classList.add('admin');
                 setState({ isLoggedIn: true, loading: true });
                 setTimeout(() => {
-                    const questions = [...mockQuestions];
+                    const questions = loadQuestionsFromStorage();
                     setState({ questions, filteredQuestions: questions, loading: false });
                 }, 500);
             } else {
@@ -235,6 +273,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', handleEdit));
         document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', handleDelete));
         document.querySelectorAll('.expand-btn').forEach(btn => btn.addEventListener('click', handleExpand));
+        document.getElementById('clear-leaderboard-btn')?.addEventListener('click', handleClearLeaderboard);
+    }
+    
+    function handleClearLeaderboard() {
+        if (confirm('確定要清除所有科目的歷史排名嗎？此操作無法復原。')) {
+            localStorage.removeItem(LEADERBOARD_STORAGE_KEY);
+            alert('所有排名資料已成功清除。');
+        }
     }
 
     function handleLogout() {
@@ -275,7 +321,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const id = e.currentTarget.dataset.id;
         if (confirm('確定要刪除此題目嗎？此操作無法復原。')) {
             const questions = state.questions.filter(q => q.id !== id);
-            const filteredQuestions = state.filteredQuestions.filter(q => q.id !== id);
+            saveQuestionsToStorage(questions);
+            // Re-apply filters after deletion
+            const filters = state.filters;
+            const filteredQuestions = questions.filter(q => {
+                const searchMatch = q.content.toLowerCase().includes(filters.searchTerm.toLowerCase());
+                const yearMatch = !filters.year || q.year === filters.year;
+                const subjectMatch = !filters.subject || q.subject === filters.subject;
+                return searchMatch && yearMatch && subjectMatch;
+            });
             setState({ questions, filteredQuestions });
         }
     }
@@ -309,8 +363,9 @@ document.addEventListener('DOMContentLoaded', () => {
             questions = [...state.questions, newQuestion];
         }
         
+        saveQuestionsToStorage(questions);
         setState({ questions, showForm: false, editingQuestionId: null });
-        handleFilterChange(); // Re-apply filters
+        handleFilterChange(); // Re-apply filters to show the new/edited question
     }
 
     // Initial render

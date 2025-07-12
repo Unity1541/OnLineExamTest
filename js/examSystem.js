@@ -1,8 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 測試數據 - 在實際應用中可以從 JSON 文件或 API 獲取
-    const mockYears = ['2025', '2024', '2023', '2022', '2021'];
-    const mockSubjects = ['數學', '英文', '國文', '物理', '化學', '生物'];
-    const mockQuestions = [
+    const QUESTIONS_STORAGE_KEY = 'examQuestions';
+
+    // Fallback data for the very first run
+    const mockQuestionsFallback = [
         { id: 1, subject: '數學', year: '2025', content: '若 2x + 3y = 12 且 x - y = 1，求 x 與 y 的值。', 
             options: ['x=3, y=2', 'x=4, y=0', 'x=3, y=0', 'x=5, y=-1'], answer: 0 },
         { id: 2, subject: '數學', year: '2025', content: '計算 ∫(x² + 2x + 1)dx', 
@@ -24,6 +24,27 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 10, subject: '英文', year: '2024', content: 'What is the opposite of "generous"?', 
             options: ['Kind', 'Stingy', 'Wealthy', 'Charitable'], answer: 1 }
     ];
+
+    function loadQuestions() {
+        try {
+            const storedQuestions = localStorage.getItem(QUESTIONS_STORAGE_KEY);
+            if (storedQuestions) {
+                const parsed = JSON.parse(storedQuestions);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    return parsed;
+                }
+            }
+            // If nothing in storage, or it's empty/invalid, use fallback and store it.
+            localStorage.setItem(QUESTIONS_STORAGE_KEY, JSON.stringify(mockQuestionsFallback));
+            return mockQuestionsFallback;
+        } catch (e) {
+            console.error("Error loading questions from localStorage, using fallback.", e);
+            return mockQuestionsFallback;
+        }
+    }
+
+    const allQuestions = loadQuestions();
+    const allSubjects = ['數學', '英文', '國文', '物理', '化學', '生物'];
 
     // 排行榜數據
     let leaderboardData = JSON.parse(localStorage.getItem('examLeaderboard')) || {
@@ -97,8 +118,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="selection-grid">
         `;
         
-        mockSubjects.forEach(subject => {
-            const hasQuestions = mockQuestions.some(q => q.year === selectedYear && q.subject === subject);
+        allSubjects.forEach(subject => {
+            const hasQuestions = allQuestions.some(q => q.year === selectedYear && q.subject === subject);
             const disabledClass = hasQuestions ? '' : 'disabled';
             
             html += `
@@ -122,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 開始考試
     function startExam() {
-        currentQuestions = mockQuestions.filter(q => q.year === selectedYear && q.subject === selectedSubject);
+        currentQuestions = allQuestions.filter(q => q.year === selectedYear && q.subject === selectedSubject);
         if (currentQuestions.length === 0) {
             alert(`${selectedYear} 年 ${selectedSubject} 尚無試題。`);
             return;
@@ -188,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         document.querySelectorAll('.option-item').forEach(item => {
             item.addEventListener('click', () => {
-                const questionId = parseInt(item.getAttribute('data-question'));
+                const questionId = item.getAttribute('data-question');
                 const optionIndex = parseInt(item.getAttribute('data-option'));
                 
                 document.querySelectorAll(`.option-item[data-question="${questionId}"]`).forEach(opt => opt.classList.remove('selected'));
@@ -231,7 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
         examInProgress = false;
         let correctCount = 0;
         currentQuestions.forEach(q => { if (answers[q.id] === q.answer) correctCount++; });
-        score = Math.round((correctCount / currentQuestions.length) * 100);
+        score = currentQuestions.length > 0 ? Math.round((correctCount / currentQuestions.length) * 100) : 0;
         updateLeaderboard();
         currentStep = 4;
         updateUI();

@@ -26,17 +26,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!isFirebaseConfigured()) {
         uploaderContainer.innerHTML = `
-             <div class="login-container fade-in" style="max-width: 550px;">
+            <div class="login-container fade-in" style="max-width: 600px;">
                 <div class="login-header">
                     <svg class="login-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
                         <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
                         <line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>
                     </svg>
                     <h2>設定未完成</h2>
-                    <p>您必須先設定 Firebase 才能使用此工具。</p>
+                    <p>您必須先設定 Firebase 才能使用此功能。</p>
                 </div>
-                <div class="demo-info" style="text-align: left; background-color: rgba(245, 158, 11, 0.1); color: #b45309;">
-                    <p><strong>請前往 <code>js/firebase.js</code> 檔案並填入您的 Firebase 設定。</strong></p>
+                <div class="demo-info" style="text-align: left; background-color: rgba(99, 102, 241, 0.05); color: #4f46e5;">
+                    <p><strong>請依照以下步驟完成設定：</strong></p>
+                    <ol style="padding-left: 20px; margin: 0.5rem 0 1rem 0;">
+                        <li>開啟 <code>js/firebase.js</code> 檔案。</li>
+                        <li>將您從 Firebase 控制台取得的設定物件貼入 <code>firebaseConfig</code>。</li>
+                        <li>在 Firebase > Authentication 服務中，啟用「電子郵件/密碼」登入。</li>
+                        <li>手動新增一個管理員帳號 (例如: admin@example.com)。</li>
+                    </ol>
+                </div>
+                <div class="demo-info" style="text-align: left; background-color: rgba(245, 158, 11, 0.1); color: #b45309; margin-top: 1rem;">
+                    <p><strong>設定後仍看到此畫面？請嘗試以下疑難排解：</strong></p>
+                    <ul style="padding-left: 20px; margin-top: 0.5rem;">
+                        <li><strong>檢查設定值：</strong> 確認 <code>js/firebase.js</code> 中所有 "YOUR_..." 的預設值都已被替換。</li>
+                        <li><strong>檢查複製內容：</strong> 確認您已完整複製 <code>firebaseConfig</code> 物件，包含開頭的 <code>{</code> 與結尾的 <code>}</code>。</li>
+                        <li><strong>清除快取：</strong> 按下 <code>Ctrl+Shift+R</code> (或 Mac 的 <code>Cmd+Shift+R</code>) 強制重新整理頁面，以清除瀏覽器快取。</li>
+                    </ul>
                 </div>
                 <div style="margin-top: 2rem; text-align: center;">
                     <a href="index.html" class="link">返回首頁</a>
@@ -69,11 +83,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div id="login-error" style="color: var(--danger-color); margin-bottom: 1rem; text-align: center; display: none;"></div>
                 <div class="form-group">
                     <label for="email">信箱</label>
-                    <input type="text" id="email" placeholder="請輸入註冊的信箱" value="admin@example.com">
+                    <input type="text" id="email" placeholder="請輸入註冊的信箱">
                 </div>
                 <div class="form-group">
                     <label for="password">密碼</label>
-                    <input type="password" id="password" placeholder="請輸入密碼" value="password">
+                    <input type="password" id="password" placeholder="請輸入密碼">
                 </div>
                 <button id="login-btn" class="btn btn-primary">登入</button>
                 <div style="margin-top: 2rem; text-align: center;">
@@ -98,21 +112,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h4>格式說明</h4>
                 <p>請將題目以純文字格式貼入左方輸入框。每題之間以 <code>---</code> 分隔。<code>ANS</code> 的值必須是 <code>A, B, C, D</code> 其中之一。</p>
                 <pre><code>YEAR: 2024
-SUBJECT: 數學
+SUBJECT: 藥理藥化
 ---
-Q: 1 + 1 = ?
-A: 1
-B: 2
-C: 3
-D: 4
-ANS: B
+Q: 下列何者為鴉片類止痛劑？
+A: Aspirin
+B: Ibuprofen
+C: Morphine
+D: Acetaminophen
+ANS: C
 ---
-Q: 5 的平方是多少?
-A: 10
-B: 15
-C: 20
-D: 25
-ANS: D</code></pre>
+Q: Penicillin 的主要作用機制為何？
+A: 抑制蛋白質合成
+B: 抑制細胞壁合成
+C: 抑制DNA複製
+D: 抑制葉酸代謝
+ANS: B</code></pre>
             </div>
 
             <div id="status-message" class="status-message" style="display:none;"></div>

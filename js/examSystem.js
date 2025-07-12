@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const questionsCollection = usePreviewMode ? null : db.collection('questions');
     const leaderboardCollection = usePreviewMode ? null : db.collection('leaderboard');
     
-    const allSubjects = ['數學', '英文', '國文', '物理', '化學', '生物'];
+    const allSubjects = ['藥理藥化', '生物藥劑', '藥物分析', '藥事行政法規', '藥物治療', '藥劑學'];
     let allQuestions = [];
 
     // 狀態變量

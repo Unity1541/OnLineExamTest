@@ -23,12 +23,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 科目映射
     const subjectMapping = {
-        'math': '數學',
-        'english': '英文',
-        'chinese': '國文',
-        'physics': '物理',
-        'chemistry': '化學',
-        'biology': '生物'
+        'pharmacology': '藥理藥化',
+        'biopharmaceutics': '生物藥劑',
+        'analysis': '藥物分析',
+        'law': '藥事行政法規',
+        'therapeutics': '藥物治療',
+        'pharmaceutics': '藥劑學'
     };
 
     function showPreviewWarning() {

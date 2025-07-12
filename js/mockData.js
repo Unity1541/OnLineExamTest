@@ -1,33 +1,31 @@
 // js/mockData.js
 
 const MOCK_QUESTIONS = [
-    { id: 'mock1', year: '2024', subject: '數學', content: '1 + 1 = ?', options: ['1', '2', '3', '4'], answer: 1 },
-    { id: 'mock2', year: '2024', subject: '數學', content: '2 * 3 = ?', options: ['4', '5', '6', '7'], answer: 2 },
-    { id: 'mock3', year: '2024', subject: '數學', content: '10 / 2 = ?', options: ['3', '4', '5', '6'], answer: 2 },
-    { id: 'mock4', year: '2024', subject: '英文', content: 'Which of the following is a fruit?', options: ['Carrot', 'Potato', 'Apple', 'Broccoli'], answer: 2 },
-    { id: 'mock5', year: '2024', subject: '英文', content: 'What is the past tense of "go"?', options: ['Goed', 'Gone', 'Went', 'Going'], answer: 2 },
-    { id: 'mock6', year: '2023', subject: '國文', content: '「床前明月光」的下一句是？', options: ['疑是地上霜', '舉頭望明月', '低頭思故鄉', '春眠不覺曉'], answer: 0 },
-    { id: 'mock7', year: '2023', subject: '國文', content: '「誰知盤中飧」的下一句是？', options: ['粒粒皆辛苦', '春種一粒粟', '汗滴禾下土', '低頭思故鄉'], answer: 0 },
+    { id: 'mock1', year: '2024', subject: '藥理藥化', content: '下列何者為鴉片類止痛劑？', options: ['Aspirin', 'Ibuprofen', 'Morphine', 'Acetaminophen'], answer: 2 },
+    { id: 'mock2', year: '2024', subject: '藥理藥化', content: 'Penicillin 的主要作用機制為何？', options: ['抑制蛋白質合成', '抑制細胞壁合成', '抑制DNA複製', '抑制葉酸代謝'], answer: 1 },
+    { id: 'mock3', year: '2024', subject: '藥劑學', content: '下列何者為影響藥物穿透血腦障壁(BBB)最主要的因素？', options: ['分子量', '水溶性', '脂溶性', '蛋白質結合率'], answer: 2 },
+    { id: 'mock4', year: '2024', subject: '藥物分析', content: '高效液相層析法(HPLC)中，何者為固定相？', options: ['溶劑', '層析管柱', '偵測器', '樣品注射器'], answer: 1 },
+    { id: 'mock5', year: '2023', subject: '藥事行政法規', content: '管制藥品依其成癮性、濫用性及社會危害性，共分為幾級？', options: ['二級', '三級', '四級', '五級'], answer: 2 },
+    { id: 'mock6', year: '2023', subject: '生物藥劑', content: '藥物動力學中「首渡效應」(First-pass effect) 主要發生在哪個器官？', options: ['腎臟', '肺臟', '肝臟', '心臟'], answer: 2 },
 ];
 
 const MOCK_LEADERBOARD = {
-    '數學': [
-        { nickname: '愛因斯坦', score: 100 },
-        { nickname: '牛頓', score: 95 },
-        { nickname: '高斯', score: 90 },
-        { nickname: '歐拉', score: 88 },
-        { nickname: '費馬', score: 85 },
+    '藥理藥化': [
+        { nickname: '弗萊明', score: 100 },
+        { nickname: '杜馬克', score: 95 },
+        { nickname: '伯韋', score: 90 },
     ],
-    '英文': [
-        { nickname: '莎士比亞', score: 98 },
-        { nickname: '珍·奧斯汀', score: 92 },
+    '生物藥劑': [
+        { nickname: '諾伊斯', score: 98 },
+        { nickname: '惠特尼', score: 92 },
     ],
-    '國文': [
-         { nickname: '李白', score: 100 },
-         { nickname: '杜甫', score: 92 },
-         { nickname: '蘇軾', score: 90 },
+    '藥物分析': [],
+    '藥事行政法規': [
+         { nickname: '藥學之父', score: 100 },
     ],
-    '物理': [],
-    '化學': [],
-    '生物': [],
+    '藥物治療': [],
+    '藥劑學': [
+        { nickname: '蓋倫', score: 88 },
+        { nickname: '阿維森納', score: 85 },
+    ],
 };

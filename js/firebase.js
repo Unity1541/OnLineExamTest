@@ -7,7 +7,7 @@ const firebaseConfig = {
   projectId: "myonlinetest-59a17",
   storageBucket: "myonlinetest-59a17.firebasestorage.app",
   messagingSenderId: "563969240336",
-  appId: "1:563969240336:web:127f122df6f2196f500995"
+  appId: "563969240336"
 };
 
 /**

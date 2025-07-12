@@ -99,6 +99,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderUploaderTool(user) {
+        const availableYears = ['2025', '2024', '2023', '2022', '2021'];
+        const availableSubjects = ['藥理藥化', '生物藥劑', '藥物分析', '藥事行政法規', '藥物治療', '藥劑學'];
+
         uploaderContainer.innerHTML = `
             <header class="admin-header">
                 <h2>試題批次上傳工具</h2>
@@ -110,26 +113,34 @@ document.addEventListener('DOMContentLoaded', () => {
             
             <div class="instructions-box">
                 <h4>格式說明</h4>
-                <p>請將題目以純文字格式貼入左方輸入框。每題之間以 <code>---</code> 分隔。<code>ANS</code> 的值必須是 <code>A, B, C, D</code> 其中之一。</p>
-                <pre><code>YEAR: 2024
-SUBJECT: 藥理藥化
----
-Q: 下列何者為鴉片類止痛劑？
-A: Aspirin
-B: Ibuprofen
-C: Morphine
-D: Acetaminophen
-ANS: C
----
-Q: Penicillin 的主要作用機制為何？
-A: 抑制蛋白質合成
-B: 抑制細胞壁合成
-C: 抑制DNA複製
-D: 抑制葉酸代謝
-ANS: B</code></pre>
+                <p>請選擇年份和科目，然後將題目以純文字格式貼入下方輸入框。每題之間請用至少一個空行隔開。</p>
+                <pre><code>1. 口服藥物時，鹼性藥物較酸性藥物易留在胃中，此現象的主要原因為何？
+A. 鹼性藥物較耐酸性，不易分解
+B. 鹼性藥物會抑制胃分解酶的分泌
+C. 鹼性藥物易與脂溶性食物結合
+D. 鹼性藥物在胃中帶正電荷不易吸收.
+答案:D
+
+2. 下列何者是藥物作用強度(potency)的指標？
+A. Kd (equilibrium dissociation constant)
+B. intrinsic activity
+C. EC50.
+D. efficacy
+答案:C</code></pre>
             </div>
 
             <div id="status-message" class="status-message" style="display:none;"></div>
+            
+             <section class="admin-controls">
+                <select id="uploader-year" class="glass-select">
+                    <option value="" disabled selected>-- 選擇年份 --</option>
+                    ${availableYears.map(y => `<option value="${y}">${y}</option>`).join('')}
+                </select>
+                <select id="uploader-subject" class="glass-select">
+                    <option value="" disabled selected>-- 選擇科目 --</option>
+                    ${availableSubjects.map(s => `<option value="${s}">${s}</option>`).join('')}
+                </select>
+            </section>
 
             <div class="uploader-grid">
                 <div class="form-group full-width">
@@ -177,75 +188,86 @@ ANS: B</code></pre>
     }
     
     function handleConvert() {
-        const input = document.getElementById('questions-input').value.trim();
+        const year = document.getElementById('uploader-year').value;
+        const subject = document.getElementById('uploader-subject').value;
+        const inputText = document.getElementById('questions-input').value;
         const jsonPreview = document.getElementById('json-preview');
         const uploadBtn = document.getElementById('upload-btn');
-        
-        generatedQuestions = [];
+
+        generatedQuestions = []; // Reset
         uploadBtn.disabled = true;
 
-        if (!input) {
+        if (!year || !subject) {
+            showStatus('請先選擇年份和科目。', 'error');
+            return;
+        }
+
+        if (!inputText.trim()) {
             jsonPreview.innerHTML = '<code>輸入框為空。</code>';
             return;
         }
 
         try {
-            const lines = input.split('\n');
-            const yearLine = lines.find(line => line.toUpperCase().startsWith('YEAR:'));
-            const subjectLine = lines.find(line => line.toUpperCase().startsWith('SUBJECT:'));
-
-            if (!yearLine || !subjectLine) {
-                 throw new Error('缺少 YEAR 或 SUBJECT 定義。');
-            }
-
-            const year = yearLine.split(':')[1].trim();
-            const subject = subjectLine.split(':')[1].trim();
-            
-            const questionBlocks = input.split('---').slice(1);
+            // Split questions by one or more empty lines
+            const questionBlocks = inputText.trim().split(/\n\s*\n/).filter(b => b.trim() !== '');
             
             generatedQuestions = questionBlocks.map((block, index) => {
-                const questionData = {
-                    content: '',
-                    options: [],
-                    answer: -1,
-                    year: year,
-                    subject: subject
-                };
+                const lines = block.trim().split('\n');
+                
+                const questionLineIndex = lines.findIndex(line => line.match(/^\s*\d+\.\s*/));
+                if (questionLineIndex === -1) throw new Error(`第 ${index + 1} 題: 找不到題號 (例如 '1.')。`);
+                
+                const optionsStartIndex = lines.findIndex(line => line.match(/^\s*A\.\s*/i));
+                if (optionsStartIndex === -1) throw new Error(`第 ${index + 1} 題: 找不到選項 'A.'。`);
 
-                const blockLines = block.trim().split('\n');
-                const answerMapping = {'A': 0, 'B': 1, 'C': 2, 'D': 3};
+                const answerLineIndex = lines.findIndex(line => line.match(/^\s*答案:/i));
+                if (answerLineIndex === -1) throw new Error(`第 ${index + 1} 題: 找不到 '答案:'。`);
 
-                blockLines.forEach(line => {
-                    const upperLine = line.toUpperCase();
-                    if (upperLine.startsWith('Q:')) {
-                        questionData.content = line.substring(2).trim();
-                    } else if (upperLine.startsWith('A:')) {
-                        questionData.options[0] = line.substring(2).trim();
-                    } else if (upperLine.startsWith('B:')) {
-                        questionData.options[1] = line.substring(2).trim();
-                    } else if (upperLine.startsWith('C:')) {
-                        questionData.options[2] = line.substring(2).trim();
-                    } else if (upperLine.startsWith('D:')) {
-                        questionData.options[3] = line.substring(2).trim();
-                    } else if (upperLine.startsWith('ANS:')) {
-                        const ans = line.substring(4).trim().toUpperCase();
-                        if (answerMapping[ans] === undefined) {
-                            throw new Error(`第 ${index + 1} 題的答案 '${ans}' 格式不正確。`);
-                        }
-                        questionData.answer = answerMapping[ans];
+                // Extract Content
+                const content = lines.slice(questionLineIndex, optionsStartIndex)
+                                     .join('\n')
+                                     .replace(/^\s*\d+\.\s*/, '')
+                                     .trim();
+
+                // Extract Options
+                const options = new Array(4).fill('');
+                const optionLines = lines.slice(optionsStartIndex, answerLineIndex);
+                let currentOption = -1;
+                optionLines.forEach(line => {
+                    const trimmedLine = line.trim();
+                    if (trimmedLine.match(/^A\./i)) {
+                        currentOption = 0;
+                        options[0] = trimmedLine.replace(/^A\.\s*/i, '').trim();
+                    } else if (trimmedLine.match(/^B\./i)) {
+                        currentOption = 1;
+                        options[1] = trimmedLine.replace(/^B\.\s*/i, '').trim();
+                    } else if (trimmedLine.match(/^C\./i)) {
+                        currentOption = 2;
+                        options[2] = trimmedLine.replace(/^C\.\s*/i, '').trim();
+                    } else if (trimmedLine.match(/^D\./i)) {
+                        currentOption = 3;
+                        options[3] = trimmedLine.replace(/^D\.\s*/i, '').trim();
+                    } else if (currentOption !== -1) {
+                        // Append to the current option for multi-line options
+                        options[currentOption] += ' ' + trimmedLine;
                     }
                 });
 
-                if (!questionData.content || questionData.options.length !== 4 || questionData.answer === -1) {
-                    throw new Error(`第 ${index + 1} 題的格式不完整，請檢查 Q, A, B, C, D, ANS 是否都存在。`);
-                }
-                
-                return questionData;
+                // Extract Answer
+                const answerChar = lines[answerLineIndex].replace(/^\s*答案:/i, '').trim().charAt(0).toUpperCase();
+                const answerMap = {'A': 0, 'B': 1, 'C': 2, 'D': 3};
+                if (answerMap[answerChar] === undefined) throw new Error(`第 ${index + 1} 題: 答案 '${answerChar}' 無效，必須是 A, B, C, 或 D。`);
+                const answer = answerMap[answerChar];
+
+                if (!content || options.some(opt => opt === '')) throw new Error(`第 ${index + 1} 題: 題目內容或四個選項不完整。`);
+
+                return { year, subject, content, options, answer };
             });
 
             jsonPreview.innerHTML = `<code>${JSON.stringify(generatedQuestions, null, 2)}</code>`;
             uploadBtn.disabled = false;
             showStatus(`成功解析 ${generatedQuestions.length} 題，可以上傳。`, 'success');
+
         } catch (error) {
             jsonPreview.innerHTML = `<code style="color: var(--danger-color);">${error.message}</code>`;
             showStatus(error.message, 'error');
@@ -258,7 +280,7 @@ ANS: B</code></pre>
             return;
         }
 
-        if (!confirm(`確定要上傳 ${generatedQuestions.length} 筆新題目到 "${generatedQuestions[0].subject}" 科目嗎？`)) {
+        if (!confirm(`確定要上傳 ${generatedQuestions.length} 筆新題目到 "${generatedQuestions[0].year} ${generatedQuestions[0].subject}" 嗎？`)) {
             return;
         }
 

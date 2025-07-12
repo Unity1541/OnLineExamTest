@@ -1,14 +1,63 @@
 document.addEventListener('DOMContentLoaded', () => {
     const adminContainer = document.getElementById('admin-container');
-    const QUESTIONS_STORAGE_KEY = 'examQuestions';
-    const LEADERBOARD_STORAGE_KEY = 'examLeaderboard';
 
-    const mockQuestions = [
-        { id: 'q1', subject: '數學', year: '2025', content: '若 2x + 3y = 12 且 x - y = 1，求 x 與 y 的值。', options: ['x=3, y=2', 'x=4, y=0', 'x=3, y=0', 'x=5, y=-1'], answer: 0 },
-        { id: 'q2', subject: '英文', year: '2025', content: 'Choose the correct sentence:', options: ['She don\'t like apples.', 'She doesn\'t likes apples.', 'She doesn\'t like apples.', 'She not like apples.'], answer: 2 },
-        { id: 'q3', subject: '數學', year: '2024', content: '一個等差數列的首項為3，公差為2，則第10項為多少？', options: ['21', '22', '23', '24'], answer: 0 },
-        { id: 'q4', subject: '國文', year: '2025', content: '下列何者不是李白的作品？', options: ['將進酒', '早發白帝城', '琵琶行', '靜夜思'], answer: 2 },
-    ];
+    // Super-gatekeeper: Check for initialization errors first.
+    if (window.firebaseInitializationError) {
+        adminContainer.innerHTML = `
+            <div class="login-container fade-in" style="max-width: 650px;">
+                 <div class="login-header">
+                    <svg class="login-icon" style="color: var(--danger-color);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <h2 style="background: var(--danger-color); -webkit-background-clip: text;">Firebase 設定錯誤</h2>
+                    <p>您的 Firebase 設定檔 (<code>js/firebase.js</code>) 存在格式錯誤，導致管理後台無法啟動。請檢查您的設定是否從 Firebase 控制台完整複製。</p>
+                </div>
+                <div class="demo-info" style="text-align: left; background-color: rgba(239, 68, 68, 0.1); color: #c05621;">
+                    <p><strong>錯誤詳情：</strong></p>
+                    <pre style="white-space: pre-wrap; word-wrap: break-word;">${window.firebaseInitializationError.message}</pre>
+                </div>
+                 <div style="margin-top: 2rem; text-align: center;">
+                    <a href="index.html" class="link">返回首頁</a>
+                </div>
+            </div>`;
+        return;
+    }
+
+    // Gatekeeper: Check if Firebase is configured before doing anything.
+    if (!isFirebaseConfigured()) {
+        adminContainer.innerHTML = `
+            <div class="login-container fade-in" style="max-width: 550px;">
+                <div class="login-header">
+                    <svg class="login-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                        <line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                    <h2>設定未完成</h2>
+                    <p>您必須先設定 Firebase 才能使用管理後台。</p>
+                </div>
+                <div class="demo-info" style="text-align: left; background-color: rgba(245, 158, 11, 0.1); color: #b45309;">
+                    <p><strong>請依照以下步驟完成設定：</strong></p>
+                    <ol style="padding-left: 20px; margin-top: 0.5rem;">
+                        <li>開啟 <code>js/firebase.js</code> 檔案。</li>
+                        <li>將您從 Firebase 控制台取得的設定物件貼入 <code>firebaseConfig</code>。</li>
+                        <li>在 Firebase > Authentication 服務中，啟用「電子郵件/密碼」登入。</li>
+                        <li>手動新增一個管理員帳號 (例如: admin@example.com)。</li>
+                    </ol>
+                </div>
+                <div style="margin-top: 2rem; text-align: center;">
+                    <a href="index.html" class="link">返回首頁</a>
+                </div>
+            </div>
+        `;
+        // Stop all further execution
+        return;
+    }
+    
+    // --- Firebase is configured, proceed with normal admin panel logic ---
+
+    const questionsCollection = db.collection('questions');
+    const leaderboardCollection = db.collection('leaderboard');
+
     const availableYears = ['2025', '2024', '2023', '2022', '2021'];
     const availableSubjects = ['數學', '英文', '國文', '物理', '化學', '生物'];
 
@@ -25,38 +74,36 @@ document.addEventListener('DOMContentLoaded', () => {
             subject: '',
         },
         expandedQuestionId: null,
+        user: null,
     };
-    
-    function loadQuestionsFromStorage() {
-        try {
-            const storedQuestions = localStorage.getItem(QUESTIONS_STORAGE_KEY);
-            if (storedQuestions) {
-                const parsed = JSON.parse(storedQuestions);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    return parsed;
-                }
-            }
-            // First time run or empty storage: use mock data and save it.
-            localStorage.setItem(QUESTIONS_STORAGE_KEY, JSON.stringify(mockQuestions));
-            return mockQuestions;
-        } catch (e) {
-            console.error("Error loading questions from localStorage", e);
-            return mockQuestions; // Fallback
-        }
-    }
-
-    function saveQuestionsToStorage(questions) {
-        try {
-            localStorage.setItem(QUESTIONS_STORAGE_KEY, JSON.stringify(questions));
-        } catch (e) {
-            console.error("Error saving questions to localStorage", e);
-        }
-    }
-
 
     function setState(newState) {
         Object.assign(state, newState);
         render();
+    }
+
+    // Check auth state
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            document.body.classList.add('admin');
+            setState({ isLoggedIn: true, user, loading: true });
+            loadQuestions();
+        } else {
+            document.body.classList.remove('admin');
+            setState({ isLoggedIn: false, user: null, questions: [], filteredQuestions: [] });
+        }
+    });
+
+    async function loadQuestions() {
+        try {
+            const snapshot = await questionsCollection.orderBy('year', 'desc').get();
+            const questions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setState({ questions, filteredQuestions: questions, loading: false });
+        } catch (error) {
+            console.error("Error loading questions:", error);
+            alert('無法載入試題資料。');
+            setState({ loading: false });
+        }
     }
 
     function render() {
@@ -81,18 +128,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h2>管理者登入</h2>
                     <p>請輸入您的帳號和密碼</p>
                 </div>
+                <div id="login-error" style="color: var(--danger-color); margin-bottom: 1rem; text-align: center; display: none;"></div>
                 <div class="form-group">
-                    <label for="username">帳號</label>
-                    <input type="text" id="username" placeholder="請輸入帳號" value="admin">
+                    <label for="email">信箱</label>
+                    <input type="text" id="email" placeholder="請輸入註冊的信箱" value="admin@example.com">
                 </div>
                 <div class="form-group">
                     <label for="password">密碼</label>
-                    <input type="password" id="password" placeholder="請輸入密碼" value="admin123">
+                    <input type="password" id="password" placeholder="請輸入密碼" value="password">
                 </div>
                 <button id="login-btn" class="btn btn-primary">登入</button>
                 <div class="demo-info">
-                    <p>Demo 帳號: admin</p>
-                    <p>Demo 密碼: admin123</p>
+                    <p>預設帳號為 <strong>admin@example.com</strong>，密碼為 <strong>password</strong>。<br>請記得在您的 Firebase Authentication 控制台中手動建立此帳號。</p>
                 </div>
                 <div style="margin-top: 2rem; text-align: center;">
                     <a href="index.html" class="link">返回首頁</a>
@@ -103,14 +150,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function renderAdminPanel() {
-        const { loading, showForm, editingQuestionId, filters } = state;
+        const { loading, showForm, editingQuestionId, filters, user } = state;
         const editingQuestion = editingQuestionId ? state.questions.find(q => q.id === editingQuestionId) : null;
 
         adminContainer.innerHTML = `
             <div class="admin-panel fade-in">
                 <header class="admin-header">
                     <h2>試題管理</h2>
-                    <button id="logout-btn" class="btn btn-secondary">登出</button>
+                    <div>
+                        <span style="color: var(--secondary-color); margin-right: 1rem;">${user.email}</span>
+                        <button id="logout-btn" class="btn btn-secondary">登出</button>
+                    </div>
                 </header>
                 
                 <section class="admin-controls">
@@ -241,29 +291,30 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function attachLoginListeners() {
         const loginBtn = document.getElementById('login-btn');
-        const usernameInput = document.getElementById('username');
+        const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
+        const errorDiv = document.getElementById('login-error');
 
         const performLogin = () => {
-            if (usernameInput.value === 'admin' && passwordInput.value === 'admin123') {
-                document.body.classList.add('admin');
-                setState({ isLoggedIn: true, loading: true });
-                setTimeout(() => {
-                    const questions = loadQuestionsFromStorage();
-                    setState({ questions, filteredQuestions: questions, loading: false });
-                }, 500);
-            } else {
-                alert('帳號或密碼錯誤');
-            }
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            errorDiv.style.display = 'none';
+
+            auth.signInWithEmailAndPassword(email, password)
+                .catch(error => {
+                    console.error("Login failed:", error);
+                    errorDiv.textContent = `登入失敗: ${error.message}`;
+                    errorDiv.style.display = 'block';
+                });
         };
 
         loginBtn.addEventListener('click', performLogin);
-        usernameInput.addEventListener('keypress', (e) => e.key === 'Enter' && performLogin());
+        emailInput.addEventListener('keypress', (e) => e.key === 'Enter' && performLogin());
         passwordInput.addEventListener('keypress', (e) => e.key === 'Enter' && performLogin());
     }
 
     function attachAdminListeners() {
-        document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
+        document.getElementById('logout-btn')?.addEventListener('click', () => auth.signOut());
         document.getElementById('add-question-btn')?.addEventListener('click', toggleAddForm);
         document.getElementById('cancel-edit-btn')?.addEventListener('click', cancelEdit);
         document.getElementById('question-form')?.addEventListener('submit', handleFormSubmit);
@@ -276,16 +327,19 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('clear-leaderboard-btn')?.addEventListener('click', handleClearLeaderboard);
     }
     
-    function handleClearLeaderboard() {
+    async function handleClearLeaderboard() {
         if (confirm('確定要清除所有科目的歷史排名嗎？此操作無法復原。')) {
-            localStorage.removeItem(LEADERBOARD_STORAGE_KEY);
-            alert('所有排名資料已成功清除。');
+            try {
+                const snapshot = await leaderboardCollection.get();
+                const batch = db.batch();
+                snapshot.docs.forEach(doc => batch.delete(doc.ref));
+                await batch.commit();
+                alert('所有排名資料已成功清除。');
+            } catch (error) {
+                console.error("Error clearing leaderboard: ", error);
+                alert('清除排名時發生錯誤。');
+            }
         }
-    }
-
-    function handleLogout() {
-        document.body.classList.remove('admin');
-        setState({ isLoggedIn: false, questions: [], filters: { searchTerm: '', year: '', subject: '' } });
     }
 
     function handleFilterChange() {
@@ -317,20 +371,16 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('question-form-container').scrollIntoView({ behavior: 'smooth' });
     }
 
-    function handleDelete(e) {
+    async function handleDelete(e) {
         const id = e.currentTarget.dataset.id;
         if (confirm('確定要刪除此題目嗎？此操作無法復原。')) {
-            const questions = state.questions.filter(q => q.id !== id);
-            saveQuestionsToStorage(questions);
-            // Re-apply filters after deletion
-            const filters = state.filters;
-            const filteredQuestions = questions.filter(q => {
-                const searchMatch = q.content.toLowerCase().includes(filters.searchTerm.toLowerCase());
-                const yearMatch = !filters.year || q.year === filters.year;
-                const subjectMatch = !filters.subject || q.subject === filters.subject;
-                return searchMatch && yearMatch && subjectMatch;
-            });
-            setState({ questions, filteredQuestions });
+            try {
+                await questionsCollection.doc(id).delete();
+                loadQuestions(); // Refresh list
+            } catch (error) {
+                console.error("Error deleting question:", error);
+                alert('刪除題目時發生錯誤。');
+            }
         }
     }
     
@@ -339,11 +389,10 @@ document.addEventListener('DOMContentLoaded', () => {
         setState({ expandedQuestionId: state.expandedQuestionId === id ? null : id });
     }
 
-    function handleFormSubmit(e) {
+    async function handleFormSubmit(e) {
         e.preventDefault();
         const form = e.target;
-        const newQuestion = {
-            id: state.editingQuestionId || `q${Date.now()}`,
+        const newQuestionData = {
             year: form.querySelector('#form-year').value,
             subject: form.querySelector('#form-subject').value,
             content: form.querySelector('#form-content').value,
@@ -356,18 +405,17 @@ document.addEventListener('DOMContentLoaded', () => {
             answer: parseInt(form.querySelector('input[name="answer"]:checked').value, 10),
         };
 
-        let questions;
-        if (state.editingQuestionId) {
-            questions = state.questions.map(q => q.id === state.editingQuestionId ? newQuestion : q);
-        } else {
-            questions = [...state.questions, newQuestion];
+        try {
+            if (state.editingQuestionId) {
+                await questionsCollection.doc(state.editingQuestionId).update(newQuestionData);
+            } else {
+                await questionsCollection.add(newQuestionData);
+            }
+            setState({ showForm: false, editingQuestionId: null, loading: true });
+            loadQuestions(); // Refresh list
+        } catch (error) {
+            console.error("Error saving question:", error);
+            alert('儲存題目時發生錯誤。');
         }
-        
-        saveQuestionsToStorage(questions);
-        setState({ questions, showForm: false, editingQuestionId: null });
-        handleFilterChange(); // Re-apply filters to show the new/edited question
     }
-
-    // Initial render
-    render();
 });

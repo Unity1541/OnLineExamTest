@@ -27,11 +27,15 @@
         <main>
             <div class="welcome-section fade-in">
                 <h2>線上考試系統</h2>
-                <p>歡迎進入國考線上排名大作戰，準備接受殘酷的事實。請選擇您要進入的功能：</p>
+                <p>歡迎使用我們的線上考試系統，享受現代化的考試體驗。請選擇您要進入的功能：</p>
                 <div class="button-group">
                     <a href="exam.html" class="btn btn-primary">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><path d="m9 14 2 2 4-4"></path></svg>
                         進入考試系統
+                    </a>
+                     <a href="uploader.html" class="btn btn-secondary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        批次上傳題目
                     </a>
                     <a href="admin.html" class="btn btn-secondary">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
@@ -48,50 +52,52 @@
                 </h3>
                 
                 <div class="tabs">
-                    <button class="tab-btn active" data-subject="math">數學</button>
-                    <button class="tab-btn" data-subject="english">英文</button>
-                    <button class="tab-btn" data-subject="chinese">國文</button>
-                    <button class="tab-btn" data-subject="physics">物理</button>
-                    <button class="tab-btn" data-subject="chemistry">化學</button>
+                    <button class="tab-btn active" data-subject="數學">數學</button>
+                    <button class="tab-btn" data-subject="英文">英文</button>
+                    <button class="tab-btn" data-subject="國文">國文</button>
+                    <button class="tab-btn" data-subject="物理">物理</button>
+                    <button class="tab-btn" data-subject="化學">化學</button>
+                    <button class="tab-btn" data-subject="生物">生物</button>
                 </div>
                 
                 <div class="tab-content active" id="math-leaderboard">
                     <!-- 排行榜內容將由 JavaScript 動態生成 -->
                     <div class="empty-leaderboard">
-                        <p>暫無排名數據</p>
-                        <a href="exam.html" class="btn btn-primary">參加考試</a>
+                        <p>正在載入排名數據...</p>
                     </div>
                 </div>
                 
                 <div class="tab-content" id="english-leaderboard">
                     <!-- 排行榜內容將由 JavaScript 動態生成 -->
                     <div class="empty-leaderboard">
-                        <p>暫無排名數據</p>
-                        <a href="exam.html" class="btn btn-primary">參加考試</a>
+                        <p>正在載入排名數據...</p>
                     </div>
                 </div>
                 
                 <div class="tab-content" id="chinese-leaderboard">
                     <!-- 排行榜內容將由 JavaScript 動態生成 -->
                     <div class="empty-leaderboard">
-                        <p>暫無排名數據</p>
-                        <a href="exam.html" class="btn btn-primary">參加考試</a>
+                        <p>正在載入排名數據...</p>
                     </div>
                 </div>
                 
                 <div class="tab-content" id="physics-leaderboard">
                     <!-- 排行榜內容將由 JavaScript 動態生成 -->
                     <div class="empty-leaderboard">
-                        <p>暫無排名數據</p>
-                        <a href="exam.html" class="btn btn-primary">參加考試</a>
+                        <p>正在載入排名數據...</p>
                     </div>
                 </div>
                 
                 <div class="tab-content" id="chemistry-leaderboard">
                     <!-- 排行榜內容將由 JavaScript 動態生成 -->
                     <div class="empty-leaderboard">
-                        <p>暫無排名數據</p>
-                        <a href="exam.html" class="btn btn-primary">參加考試</a>
+                        <p>正在載入排名數據...</p>
+                    </div>
+                </div>
+                 <div class="tab-content" id="biology-leaderboard">
+                    <!-- 排行榜內容將由 JavaScript 動態生成 -->
+                    <div class="empty-leaderboard">
+                        <p>正在載入排名數據...</p>
                     </div>
                 </div>
             </div>
@@ -101,6 +107,17 @@
         </footer>
     </div>
     
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Firebase Config -->
+    <script src="js/firebase.js"></script>
+
+    <!-- Mock Data for Preview Mode -->
+    <script src="js/mockData.js"></script>
+    
+    <!-- App Script -->
     <script src="js/leaderboard.js" defer></script>
 <script type="module" src="/index.tsx"></script>
 </body>

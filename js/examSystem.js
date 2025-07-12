@@ -1,55 +1,30 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const QUESTIONS_STORAGE_KEY = 'examQuestions';
-
-    // Fallback data for the very first run
-    const mockQuestionsFallback = [
-        { id: 1, subject: '數學', year: '2025', content: '若 2x + 3y = 12 且 x - y = 1，求 x 與 y 的值。', 
-            options: ['x=3, y=2', 'x=4, y=0', 'x=3, y=0', 'x=5, y=-1'], answer: 0 },
-        { id: 2, subject: '數學', year: '2025', content: '計算 ∫(x² + 2x + 1)dx', 
-            options: ['x³/3 + x² + x + C', 'x³/3 + 2x² + x + C', 'x³/3 + x² + x² + C', 'x³ + 2x² + x + C'], answer: 0 },
-        { id: 3, subject: '英文', year: '2025', content: 'Choose the correct sentence:', 
-            options: ['She don\'t like apples.', 'She doesn\'t likes apples.', 'She doesn\'t like apples.', 'She not like apples.'], answer: 2 },
-        { id: 4, subject: '英文', year: '2025', content: 'What is the meaning of "ubiquitous"?', 
-            options: ['Rare', 'Present everywhere', 'Unique', 'Unnecessary'], answer: 1 },
-        { id: 5, subject: '國文', year: '2025', content: '下列何者不是李白的作品？', 
-            options: ['將進酒', '早發白帝城', '琵琶行', '靜夜思'], answer: 2 },
-        { id: 6, subject: '物理', year: '2025', content: '物體從靜止開始做勻加速運動，在前2秒內通過的路程為4米，則在第3秒內通過的路程為？', 
-            options: ['3米', '4米', '5米', '6米'], answer: 2 },
-        { id: 7, subject: '化學', year: '2025', content: '下列哪個是二氧化碳的化學式？', 
-            options: ['CO', 'CO₂', 'H₂CO₃', 'O₂'], answer: 1 },
-        { id: 8, subject: '生物', year: '2025', content: '下列何者不是動物細胞的構造？', 
-            options: ['細胞膜', '細胞壁', '細胞核', '粒線體'], answer: 1 },
-        { id: 9, subject: '數學', year: '2024', content: '一個等差數列的首項為3，公差為2，則第10項為多少？', 
-            options: ['21', '22', '23', '24'], answer: 0 },
-        { id: 10, subject: '英文', year: '2024', content: 'What is the opposite of "generous"?', 
-            options: ['Kind', 'Stingy', 'Wealthy', 'Charitable'], answer: 1 }
-    ];
-
-    function loadQuestions() {
-        try {
-            const storedQuestions = localStorage.getItem(QUESTIONS_STORAGE_KEY);
-            if (storedQuestions) {
-                const parsed = JSON.parse(storedQuestions);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    return parsed;
-                }
-            }
-            // If nothing in storage, or it's empty/invalid, use fallback and store it.
-            localStorage.setItem(QUESTIONS_STORAGE_KEY, JSON.stringify(mockQuestionsFallback));
-            return mockQuestionsFallback;
-        } catch (e) {
-            console.error("Error loading questions from localStorage, using fallback.", e);
-            return mockQuestionsFallback;
-        }
+    const examContainer = document.getElementById('exam-container');
+    // Super-gatekeeper: Check for initialization errors first.
+    if (window.firebaseInitializationError) {
+        examContainer.innerHTML = `
+            <div class="glass-card fade-in" style="max-width: 650px; margin: 2rem auto;">
+                 <div class="login-header">
+                    <svg class="login-icon" style="color: var(--danger-color);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <h2 style="background: var(--danger-color); -webkit-background-clip: text;">Firebase 設定錯誤</h2>
+                    <p>您的 Firebase 設定檔 (<code>js/firebase.js</code>) 存在格式錯誤，導致應用程式無法啟動。請檢查您的設定是否從 Firebase 控制台完整複製。</p>
+                </div>
+                <div class="demo-info" style="text-align: left; background-color: rgba(239, 68, 68, 0.1); color: #c05621;">
+                    <p><strong>錯誤詳情：</strong></p>
+                    <pre style="white-space: pre-wrap; word-wrap: break-word;">${window.firebaseInitializationError.message}</pre>
+                </div>
+            </div>`;
+        return; // Stop execution
     }
 
-    const allQuestions = loadQuestions();
+    const usePreviewMode = !isFirebaseConfigured();
+    const questionsCollection = usePreviewMode ? null : db.collection('questions');
+    const leaderboardCollection = usePreviewMode ? null : db.collection('leaderboard');
+    
     const allSubjects = ['數學', '英文', '國文', '物理', '化學', '生物'];
-
-    // 排行榜數據
-    let leaderboardData = JSON.parse(localStorage.getItem('examLeaderboard')) || {
-        '數學': [], '英文': [], '國文': [], '物理': [], '化學': [], '生物': []
-    };
+    let allQuestions = [];
 
     // 狀態變量
     let currentStep = 0; // 0: 輸入暱稱, 1: 選擇年份, 2: 選擇科目, 3: 考試進行中, 4: 考試結果
@@ -63,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let answers = {};
     let score = 0;
     let timer = null;
+    let latestExamId = null;
 
     // 獲取DOM元素
     const nicknameStep = document.getElementById('nickname-step');
@@ -75,6 +51,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const startBtn = document.getElementById('start-btn');
     const yearSelect = document.getElementById('year-select');
     const yearNextBtn = document.getElementById('year-next-btn');
+    
+    function showPreviewWarning() {
+        const warningDiv = document.createElement('div');
+        warningDiv.className = 'demo-info';
+        warningDiv.style.margin = '1rem auto 0 auto';
+        warningDiv.style.textAlign = 'center';
+        warningDiv.style.maxWidth = '800px';
+        warningDiv.innerHTML = '<p><strong>預覽模式</strong>：目前正在使用預設題目。您的成績將不會被記錄。請設定 <code>js/firebase.js</code> 以啟用完整功能。</p>';
+        document.querySelector('.container > header').insertAdjacentElement('afterend', warningDiv);
+    }
+
+    async function loadAllQuestions() {
+        if (usePreviewMode) {
+            allQuestions = MOCK_QUESTIONS;
+            showPreviewWarning();
+            return;
+        }
+        try {
+            const snapshot = await questionsCollection.get();
+            allQuestions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (error) {
+            console.error("Error loading questions from Firestore:", error);
+            alert("無法從資料庫載入試題，請檢查 Firebase 設定或網路連線。");
+        }
+    }
 
     // 綁定事件
     startBtn.addEventListener('click', () => {
@@ -152,6 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentQuestions.forEach(q => { answers[q.id] = null; });
         examInProgress = true;
         timeLeft = timeLimit * 60;
+        latestExamId = `exam_${Date.now()}`;
         currentStep = 3;
         updateUI();
         startTimer();
@@ -253,37 +255,109 @@ document.addEventListener('DOMContentLoaded', () => {
         let correctCount = 0;
         currentQuestions.forEach(q => { if (answers[q.id] === q.answer) correctCount++; });
         score = currentQuestions.length > 0 ? Math.round((correctCount / currentQuestions.length) * 100) : 0;
-        updateLeaderboard();
+        
+        if (!usePreviewMode) {
+            updateLeaderboard();
+        }
+
         currentStep = 4;
         updateUI();
     }
 
-    function updateLeaderboard() {
-        let subjectLeaderboard = leaderboardData[selectedSubject] || [];
-        const existingIndex = subjectLeaderboard.findIndex(item => item.nickname === nickname);
+    async function updateLeaderboard() {
+        const userRecord = { 
+            nickname, 
+            score, 
+            subject: selectedSubject,
+            year: selectedYear, 
+            date: firebase.firestore.FieldValue.serverTimestamp(),
+            examId: latestExamId
+        };
         
-        const userRecord = { nickname, score, year: selectedYear, date: new Date().toISOString() };
-
-        if (existingIndex !== -1) {
-            // Update only if the new score is higher
-            if (score >= subjectLeaderboard[existingIndex].score) {
-                 subjectLeaderboard[existingIndex] = userRecord;
-            }
-        } else {
-            subjectLeaderboard.push(userRecord);
+        try {
+            await leaderboardCollection.add(userRecord);
+        } catch (error) {
+            console.error("Error updating leaderboard:", error);
+            // Even if leaderboard fails, user should see their score.
         }
-        
-        subjectLeaderboard.sort((a, b) => b.score - a.score);
-        leaderboardData[selectedSubject] = subjectLeaderboard;
-        localStorage.setItem('examLeaderboard', JSON.stringify(leaderboardData));
     }
 
-    function renderResultStep() {
-        const subjectLeaderboard = leaderboardData[selectedSubject] || [];
-        const userIndex = subjectLeaderboard.findIndex(item => item.nickname === nickname);
-        const userRank = userIndex !== -1 ? userIndex + 1 : "N/A";
-        const topFive = subjectLeaderboard.slice(0, 5);
+    async function renderResultStep() {
+        resultStep.innerHTML = `<div class="loading-spinner">正在計算您的成績與排名...</div>`;
         
+        if (usePreviewMode) {
+            renderResultStepPreview();
+            return;
+        }
+
+        try {
+            const q = leaderboardCollection.where('subject', '==', selectedSubject).orderBy('score', 'desc').orderBy('date', 'desc');
+            const snapshot = await q.get();
+            const subjectLeaderboard = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
+            
+            const userRankData = subjectLeaderboard.find(item => item.examId === latestExamId);
+            const userRank = userRankData ? subjectLeaderboard.indexOf(userRankData) + 1 : "N/A";
+            const topFive = subjectLeaderboard.slice(0, 5);
+
+            let html = `
+                <div class="result-container glass-card fade-in">
+                     <div class="${score >= 60 ? 'result-icon success' : 'result-icon failure'}">
+                        ${score >= 60 ? 
+                            '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>' : 
+                            '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>'}
+                    </div>
+                    <h2 class="result-title">${score >= 60 ? '恭喜通過！' : '再接再厲！'}</h2>
+                    <p>${selectedYear}年 ${selectedSubject} 考試 | 考生：${nickname}</p>
+                    
+                    <div class="score-container">
+                        <div class="result-score">
+                            <span class="score-value">${score}</span>
+                            <span class="score-total">/100</span>
+                        </div>
+                    </div>
+                    
+                    <div class="rank-info">
+                        <p>您在${selectedSubject}排行榜中排名第 <strong>${userRank}</strong> 名</p>
+                    </div>
+                    
+                    <h3 class="leaderboard-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17.8 5.8 21 7 14.1 2 9.3l7-1L12 2l3 6.3 7 1-5 4.8 1.2 6.9-6.2-3.2Z"></path></svg>
+                        ${selectedSubject}排行榜（前五名）
+                    </h3>
+                    
+                    <div class="mini-leaderboard">
+            `;
+            
+            if (topFive.length === 0) {
+                html += `<p class="no-data">暫無排名數據</p>`;
+            } else {
+                topFive.forEach((item, index) => {
+                    html += `
+                        <div class="rank-item ${item.examId === latestExamId ? 'current-user' : ''}">
+                            <div class="rank-position">${index + 1}</div>
+                            <div class="rank-nickname">${item.nickname}</div>
+                            <div class="rank-score">${item.score}</div>
+                        </div>
+                    `;
+                });
+            }
+            
+            html += `
+                    </div>
+                    <div class="button-group" style="margin-top: 2rem;">
+                        <a href="index.html" class="btn btn-secondary">返回首頁</a>
+                        <a href="exam.html" class="btn btn-primary">再測一次</a>
+                    </div>
+                </div>
+            `;
+            resultStep.innerHTML = html;
+        } catch (error) {
+             console.error("Error rendering results:", error);
+             resultStep.innerHTML = `<div class="no-data">無法載入排名資料，但您的分數是 ${score} 分。</div>`
+        }
+    }
+
+    function renderResultStepPreview() {
         let html = `
             <div class="result-container glass-card fade-in">
                  <div class="${score >= 60 ? 'result-icon success' : 'result-icon failure'}">
@@ -302,34 +376,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 
                 <div class="rank-info">
-                    <p>您在${selectedSubject}排行榜中排名第 <strong>${userRank}</strong> 名</p>
+                    <p>預覽模式下不計算排名</p>
                 </div>
                 
-                <h3 class="leaderboard-title">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17.8 5.8 21 7 14.1 2 9.3l7-1L12 2l3 6.3 7 1-5 4.8 1.2 6.9-6.2-3.2Z"></path></svg>
-                    ${selectedSubject}排行榜（前五名）
-                </h3>
-                
-                <div class="mini-leaderboard">
-        `;
-        
-        if (topFive.length === 0) {
-            html += `<p class="no-data">暫無排名數據</p>`;
-        } else {
-            topFive.forEach((item, index) => {
-                html += `
-                    <div class="rank-item ${item.nickname === nickname ? 'current-user' : ''}">
-                        <div class="rank-position">${index + 1}</div>
-                        <div class="rank-nickname">${item.nickname}</div>
-                        <div class="rank-score">${item.score}</div>
-                    </div>
-                `;
-            });
-        }
-        
-        html += `
-                </div>
-                <div class="button-group" style="margin-top: 2rem;">
+                 <div class="button-group" style="margin-top: 2rem;">
                     <a href="index.html" class="btn btn-secondary">返回首頁</a>
                     <a href="exam.html" class="btn btn-primary">再測一次</a>
                 </div>
@@ -338,5 +388,11 @@ document.addEventListener('DOMContentLoaded', () => {
         resultStep.innerHTML = html;
     }
 
-    updateUI();
+    // Initialize the page
+    async function initialize() {
+        await loadAllQuestions();
+        updateUI();
+    }
+    
+    initialize();
 });

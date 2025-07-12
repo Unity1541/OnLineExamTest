@@ -1,92 +1,128 @@
-// 排行榜標籤切換
 document.addEventListener('DOMContentLoaded', function() {
+    // Super-gatekeeper: Check for initialization errors first.
+    if (window.firebaseInitializationError) {
+        const leaderboardSection = document.querySelector('.leaderboard-section');
+        leaderboardSection.innerHTML = `
+            <div class="login-header" style="padding: 2rem 0;">
+                <svg class="login-icon" style="color: var(--danger-color);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <h2 style="background: var(--danger-color); -webkit-background-clip: text;">Firebase 設定錯誤</h2>
+                <p>無法載入排行榜，因為 <code>js/firebase.js</code> 檔案中的設定格式有誤。</p>
+                <pre style="max-width: 600px; margin: 1rem auto; text-align: left; padding: 1rem; background-color: rgba(239, 68, 68, 0.05); border-radius: 0.75rem; color: #c05621; white-space: pre-wrap; word-wrap: break-word;">${window.firebaseInitializationError.message}</pre>
+            </div>
+        `;
+        return;
+    }
+
+    const usePreviewMode = !isFirebaseConfigured();
+    const leaderboardCollection = usePreviewMode ? null : db.collection('leaderboard');
+    
     const tabBtns = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
     
+    // 科目映射
+    const subjectMapping = {
+        'math': '數學',
+        'english': '英文',
+        'chinese': '國文',
+        'physics': '物理',
+        'chemistry': '化學',
+        'biology': '生物'
+    };
+
+    function showPreviewWarning() {
+        const warningDiv = document.createElement('div');
+        warningDiv.className = 'demo-info';
+        warningDiv.style.marginBottom = '2rem';
+        warningDiv.style.textAlign = 'center';
+        warningDiv.innerHTML = '<p><strong>預覽模式</strong>：目前顯示預設排名。請設定 <code>js/firebase.js</code> 以查看即時排行榜。</p>';
+        
+        const leaderboardSection = document.querySelector('.leaderboard-section');
+        if (leaderboardSection) {
+            leaderboardSection.insertBefore(warningDiv, leaderboardSection.firstChild);
+        }
+    }
+
     tabBtns.forEach(btn => {
         btn.addEventListener('click', function() {
-            // 移除所有標籤的active類
             tabBtns.forEach(b => b.classList.remove('active'));
-            // 為當前標籤添加active類
             this.classList.add('active');
             
-            // 隱藏所有內容
             tabContents.forEach(content => content.classList.remove('active'));
-            // 顯示對應內容
-            const subject = this.getAttribute('data-subject');
-            document.getElementById(`${subject}-leaderboard`).classList.add('active');
+            
+            const subjectKey = this.getAttribute('data-subject');
+            const leaderboardContainerId = `${Object.keys(subjectMapping).find(key => subjectMapping[key] === subjectKey)}-leaderboard`;
+            document.getElementById(leaderboardContainerId).classList.add('active');
         });
     });
     
-    // 從本地存儲加載排行榜數據
-    loadLeaderboardData();
-});
+    // 加載所有排行榜數據
+    if (usePreviewMode) {
+        showPreviewWarning();
+    }
+    loadAllLeaderboards();
 
-// 加載排行榜數據
-function loadLeaderboardData() {
-    // 獲取排行榜數據
-    const leaderboardData = JSON.parse(localStorage.getItem('examLeaderboard')) || {
-        '數學': [],
-        '英文': [],
-        '國文': [],
-        '物理': [],
-        '化學': [],
-        '生物': []
-    };
-    
-    // 科目映射
-    const subjectMapping = {
-        '數學': 'math',
-        '英文': 'english',
-        '國文': 'chinese',
-        '物理': 'physics',
-        '化學': 'chemistry',
-        '生物': 'biology'
-    };
-    
-    // 更新每個科目的排行榜
-    for (const subject in leaderboardData) {
-        if (leaderboardData.hasOwnProperty(subject) && subjectMapping[subject]) {
-            const subjectId = subjectMapping[subject];
-            const leaderboardContainer = document.getElementById(`${subjectId}-leaderboard`);
-            
+    async function loadAllLeaderboards() {
+        for (const key in subjectMapping) {
+            const subjectName = subjectMapping[key];
+            const leaderboardContainer = document.getElementById(`${key}-leaderboard`);
             if (leaderboardContainer) {
-                // 排序數據
-                const sortedData = [...leaderboardData[subject]].sort((a, b) => b.score - a.score);
-                // 只取前5名
-                const top5 = sortedData.slice(0, 5);
-                
-                if (top5.length === 0) {
-                    leaderboardContainer.innerHTML = `
-                        <div class="empty-leaderboard">
-                            <p>暫無排名數據</p>
-                            <a href="exam.html" class="btn btn-primary">參加考試</a>
-                        </div>
-                    `;
-                    continue;
-                }
-                
-                let html = '<div class="leaderboard-cards">';
-                
-                top5.forEach((item, index) => {
-                    const rankClass = index < 3 ? `top-${index + 1}` : '';
-                    const medalOrRank = index < 3 ? 
-                        `<div class="medal">${index + 1}</div>` : 
-                        `<div class="rank">${index + 1}</div>`;
-                    
-                    html += `
-                        <div class="leaderboard-card ${rankClass}">
-                            ${medalOrRank}
-                            <div class="user-avatar">${item.nickname.charAt(0)}</div>
-                            <div class="user-name">${item.nickname}</div>
-                            <div class="score">${item.score}</div>
-                        </div>
-                    `;
-                });
-                
-                html += '</div>';
-                leaderboardContainer.innerHTML = html;
+                await loadLeaderboardForSubject(subjectName, leaderboardContainer);
             }
         }
     }
-}
+
+    async function loadLeaderboardForSubject(subject, container) {
+        if (usePreviewMode) {
+            renderLeaderboard(MOCK_LEADERBOARD[subject] || [], container);
+            return;
+        }
+
+        try {
+            const q = leaderboardCollection
+                .where('subject', '==', subject)
+                .orderBy('score', 'desc')
+                .limit(5);
+
+            const snapshot = await q.get();
+            const top5 = snapshot.docs.map(doc => doc.data());
+            renderLeaderboard(top5, container);
+
+        } catch (error) {
+            console.error(`Error loading leaderboard for ${subject}:`, error);
+            container.innerHTML = `<div class="empty-leaderboard"><p>載入排名時出錯，請檢查 Firebase 設定。</p></div>`;
+        }
+    }
+
+    function renderLeaderboard(data, container) {
+        if (data.length === 0) {
+            container.innerHTML = `
+                <div class="empty-leaderboard">
+                    <p>暫無排名數據</p>
+                    <a href="exam.html" class="btn btn-primary">參加考試</a>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '<div class="leaderboard-cards">';
+        data.slice(0, 5).forEach((item, index) => {
+            const rankClass = index < 3 ? `top-${index + 1}` : '';
+            const medalOrRank = index < 3 
+                ? `<div class="medal">${index + 1}</div>` 
+                : `<div class="rank">${index + 1}</div>`;
+            
+            html += `
+                <div class="leaderboard-card ${rankClass}">
+                    ${medalOrRank}
+                    <div class="user-avatar">${item.nickname.charAt(0)}</div>
+                    <div class="user-name">${item.nickname}</div>
+                    <div class="score">${item.score}</div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+});

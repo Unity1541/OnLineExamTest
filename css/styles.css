@@ -242,7 +242,7 @@ footer {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-4);
-    max-width: 300px;
+    max-width: 400px;
     margin: 0 auto;
 }
 
@@ -1306,4 +1306,75 @@ select {
     padding: var(--spacing-16);
     color: var(--muted-text);
     font-style: italic;
+}
+
+
+/* ========= Uploader Tool Styles ========= */
+
+.instructions-box {
+    background-color: rgba(99, 102, 241, 0.05);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-6);
+    margin-bottom: var(--spacing-8);
+}
+
+.instructions-box h4 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-2);
+}
+
+.instructions-box p {
+    color: var(--secondary-color);
+    margin-bottom: var(--spacing-4);
+}
+
+.instructions-box pre {
+    background-color: rgba(30, 41, 59, 0.9);
+    color: var(--light-text);
+    padding: var(--spacing-4);
+    border-radius: var(--border-radius-sm);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.uploader-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-8);
+}
+
+@media (min-width: 1024px) {
+    .uploader-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+#json-preview {
+    background-color: #1e293b;
+    color: #e2e8f0;
+    padding: var(--spacing-4);
+    border-radius: var(--border-radius);
+    height: 100%;
+    min-height: 400px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.status-message {
+    padding: var(--spacing-4);
+    border-radius: var(--border-radius);
+    margin-bottom: var(--spacing-6);
+    font-weight: 500;
+}
+
+.status-message.success {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+}
+
+.status-message.error {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--danger-color);
 }

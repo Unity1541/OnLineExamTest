@@ -80,13 +80,23 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         try {
-            const q = leaderboardCollection
-                .where('subject', '==', subject)
-                .orderBy('score', 'desc')
-                .limit(5);
-
+            // Use a simpler query and sort on the client to avoid needing a composite index.
+            const q = leaderboardCollection.where('subject', '==', subject);
             const snapshot = await q.get();
-            const top5 = snapshot.docs.map(doc => doc.data());
+
+            let leaderboardData = snapshot.docs.map(doc => doc.data());
+            
+            // Client-side sorting
+            leaderboardData.sort((a, b) => {
+                if (b.score !== a.score) {
+                    return b.score - a.score;
+                }
+                const dateA = a.date ? a.date.toMillis() : 0;
+                const dateB = b.date ? b.date.toMillis() : 0;
+                return dateB - dateA; // Newer scores first for tie-breaking
+            });
+            
+            const top5 = leaderboardData.slice(0, 5);
             renderLeaderboard(top5, container);
 
         } catch (error) {

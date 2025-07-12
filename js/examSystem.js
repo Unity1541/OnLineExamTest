@@ -249,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
 
-    function submitExam() {
+    async function submitExam() {
         clearInterval(timer);
         examInProgress = false;
         let correctCount = 0;
@@ -257,7 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
         score = currentQuestions.length > 0 ? Math.round((correctCount / currentQuestions.length) * 100) : 0;
         
         if (!usePreviewMode) {
-            updateLeaderboard();
+            await updateLeaderboard();
         }
 
         currentStep = 4;
@@ -275,10 +275,31 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         
         try {
-            await leaderboardCollection.add(userRecord);
+            // More robust logic that doesn't rely on composite indexes.
+            // 1. Fetch all records for the subject.
+            const querySnapshot = await leaderboardCollection
+                .where('subject', '==', selectedSubject)
+                .get();
+
+            // 2. Find the user's existing record on the client-side.
+            let existingDoc = null;
+            querySnapshot.forEach(doc => {
+                if (doc.data().nickname === nickname) {
+                    existingDoc = doc;
+                }
+            });
+
+            if (existingDoc) {
+                // 3a. If a record exists, update it.
+                await leaderboardCollection.doc(existingDoc.id).update(userRecord);
+            } else {
+                // 3b. If no record exists, create a new one.
+                await leaderboardCollection.add(userRecord);
+            }
         } catch (error) {
             console.error("Error updating leaderboard:", error);
-            // Even if leaderboard fails, user should see their score.
+            // This is a non-critical error for the user's flow.
+            // They will still see their score, but we log the issue.
         }
     }
 
@@ -290,10 +311,24 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Add a small delay to allow Firestore's index to update after the write.
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         try {
-            const q = leaderboardCollection.where('subject', '==', selectedSubject).orderBy('score', 'desc').orderBy('date', 'desc');
+            // Use a simpler query and sort on the client to avoid needing a composite index.
+            const q = leaderboardCollection.where('subject', '==', selectedSubject);
             const snapshot = await q.get();
-            const subjectLeaderboard = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
+            let subjectLeaderboard = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
+            
+            // Client-side sorting
+            subjectLeaderboard.sort((a, b) => {
+                if (b.score !== a.score) {
+                    return b.score - a.score;
+                }
+                const dateA = a.date ? a.date.toMillis() : 0;
+                const dateB = b.date ? b.date.toMillis() : 0;
+                return dateB - dateA;
+            });
             
             const userRankData = subjectLeaderboard.find(item => item.examId === latestExamId);
             const userRank = userRankData ? subjectLeaderboard.indexOf(userRankData) + 1 : "N/A";
@@ -353,7 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
             resultStep.innerHTML = html;
         } catch (error) {
              console.error("Error rendering results:", error);
-             resultStep.innerHTML = `<div class="no-data">無法載入排名資料，但您的分數是 ${score} 分。</div>`
+             resultStep.innerHTML = `<div class="glass-card fade-in" style="padding: 2rem;"><p class="no-data">無法載入排名資料，但您的分數是 ${score} 分。</p></div>`
         }
     }
 

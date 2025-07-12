@@ -268,6 +268,7 @@ label {
 
 input[type="text"],
 input[type="password"],
+input[type="search"],
 select,
 textarea {
     width: 100%;
@@ -283,6 +284,7 @@ textarea {
 
 input[type="text"]:focus,
 input[type="password"]:focus,
+input[type="search"]:focus,
 select:focus,
 textarea:focus {
     outline: none;
@@ -1083,7 +1085,7 @@ select {
 
 /* 響應式調整 */
 @media (max-width: 768px) {
-    main {
+    main, .admin-panel {
         padding: var(--spacing-4);
     }
     
@@ -1122,4 +1124,186 @@ select {
     .leaderboard-cards {
         grid-template-columns: 1fr 1fr;
     }
+}
+
+
+/* ========= Admin Panel Styles ========= */
+
+.admin-panel {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--spacing-8);
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-6);
+    padding-bottom: var(--spacing-4);
+    border-bottom: 1px solid rgba(203, 213, 225, 0.3);
+}
+
+.admin-header h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.admin-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-6);
+    align-items: center;
+}
+
+.admin-controls .btn {
+    padding: var(--spacing-3) var(--spacing-6);
+}
+
+.admin-controls input, .admin-controls select {
+    padding: var(--spacing-3);
+    flex-grow: 1;
+}
+
+#question-form-container {
+    margin-bottom: var(--spacing-8);
+    display: none; /* Initially hidden */
+}
+
+.question-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-6);
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.options-group {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-4);
+}
+
+.answer-group {
+    grid-column: 1 / -1;
+}
+
+.answer-options {
+    display: flex;
+    gap: var(--spacing-4);
+}
+
+.answer-options label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    cursor: pointer;
+}
+
+.form-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-4);
+    margin-top: var(--spacing-4);
+}
+
+.question-list {
+    display: grid;
+    gap: var(--spacing-6);
+}
+
+.question-item {
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    padding: var(--spacing-6);
+    transition: all 0.3s ease;
+    border-left: 4px solid var(--primary-color);
+}
+
+.question-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-4);
+}
+
+.question-item-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    flex-grow: 1;
+}
+
+.question-item-tags {
+    display: flex;
+    gap: var(--spacing-2);
+    margin-bottom: var(--spacing-2);
+}
+
+.tag {
+    background-color: rgba(99, 102, 241, 0.1);
+    color: var(--primary-color);
+    padding: var(--spacing-1) var(--spacing-3);
+    border-radius: var(--border-radius-full);
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.question-item-actions {
+    display: flex;
+    gap: var(--spacing-3);
+}
+
+.action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--secondary-color);
+    padding: var(--spacing-1);
+    border-radius: var(--border-radius-sm);
+    transition: all 0.2s;
+}
+
+.action-btn:hover {
+    color: var(--dark-text);
+    background-color: rgba(203, 213, 225, 0.5);
+}
+
+.question-item-details {
+    margin-top: var(--spacing-4);
+    padding-top: var(--spacing-4);
+    border-top: 1px solid rgba(203, 213, 225, 0.3);
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+    display: none; /* Initially hidden */
+}
+
+.question-item-details.expanded {
+    display: block;
+}
+
+.question-item-details strong {
+    color: var(--dark-text);
+}
+
+.question-item-details .correct {
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+.loading-spinner, .no-questions {
+    text-align: center;
+    padding: var(--spacing-16);
+    color: var(--muted-text);
+    font-style: italic;
 }

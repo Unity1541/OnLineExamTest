@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderUploaderTool(user) {
         const availableYears = ['2025', '2024', '2023', '2022', '2021'];
-        const availableSubjects = ['藥理藥化', '生物藥劑', '藥物分析', '藥事行政法規', '藥物治療', '藥劑學'];
+        const availableSubjects = ['藥理藥化', '生物藥劑', '藥物分析', '藥事行政法規', '藥物治療', '藥劑學', '生藥學'];
 
         uploaderContainer.innerHTML = `
             <header class="admin-header">

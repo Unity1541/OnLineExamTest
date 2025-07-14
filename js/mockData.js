@@ -7,6 +7,7 @@ const MOCK_QUESTIONS = [
     { id: 'mock4', year: '2024', subject: '藥物分析', content: '高效液相層析法(HPLC)中，何者為固定相？', options: ['溶劑', '層析管柱', '偵測器', '樣品注射器'], answer: 1 },
     { id: 'mock5', year: '2023', subject: '藥事行政法規', content: '管制藥品依其成癮性、濫用性及社會危害性，共分為幾級？', options: ['二級', '三級', '四級', '五級'], answer: 2 },
     { id: 'mock6', year: '2023', subject: '生物藥劑', content: '藥物動力學中「首渡效應」(First-pass effect) 主要發生在哪個器官？', options: ['腎臟', '肺臟', '肝臟', '心臟'], answer: 2 },
+    { id: 'mock7', year: '2024', subject: '生藥學', content: '何者為「君藥」在方劑中的主要作用？', options: ['引經報使', '治療主要病證', '增強君藥藥效', '減輕君藥毒性'], answer: 1 },
 ];
 
 const MOCK_LEADERBOARD = {
@@ -27,5 +28,9 @@ const MOCK_LEADERBOARD = {
     '藥劑學': [
         { nickname: '蓋倫', score: 88 },
         { nickname: '阿維森納', score: 85 },
+    ],
+    '生藥學': [
+        { nickname: '神農氏', score: 99 },
+        { nickname: '李時珍', score: 96 },
     ],
 };

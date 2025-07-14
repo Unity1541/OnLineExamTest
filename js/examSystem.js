@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const questionsCollection = usePreviewMode ? null : db.collection('questions');
     const leaderboardCollection = usePreviewMode ? null : db.collection('leaderboard');
     
-    const allSubjects = ['藥理藥化', '生物藥劑', '藥物分析', '藥事行政法規', '藥物治療', '藥劑學'];
+    const allSubjects = ['藥理藥化', '生物藥劑', '藥物分析', '藥事行政法規', '藥物治療', '藥劑學', '生藥學'];
     let allQuestions = [];
 
     // 狀態變量

@@ -28,7 +28,8 @@ document.addEventListener('DOMContentLoaded', function() {
         'analysis': '藥物分析',
         'law': '藥事行政法規',
         'therapeutics': '藥物治療',
-        'pharmaceutics': '藥劑學'
+        'pharmaceutics': '藥劑學',
+        'pharmacognosy': '生藥學'
     };
 
     function showPreviewWarning() {

@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <button id="login-btn" class="btn btn-primary">登入</button>
                 <div class="demo-info">
-                    <p>預設帳號為 <strong>admin@example.com</strong>，密碼為 <strong>password</strong>。<br>請記得在您的 Firebase Authentication 控制台中手動建立此帳號。</p>
+                    <p>預設帳號為 <strong>admin@example.com</strong>，密碼為 <strong>xxxx</strong>。<br>請記得在您的 Firebase Authentication 控制台中手動建立此帳號。</p>
                 </div>
                 <div style="margin-top: 2rem; text-align: center;">
                     <a href="index.html" class="link">返回首頁</a>
